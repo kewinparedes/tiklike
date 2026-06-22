@@ -18,18 +18,21 @@ de ambas plataformas juntos, con efectos de regalo y avatares.
 ## Requisitos
 - **Node.js 18 o superior** (recomendado 20+). Descárgalo en https://nodejs.org
 
-## Instalación
+## Instalación (fácil, Windows)
+1. En este repo: botón verde **Code → Download ZIP** y descomprime la carpeta.
+2. Instala **Node.js** si no lo tienes: https://nodejs.org
+3. Doble clic en **`start.bat`** — la primera vez instala todo solo (1-2 min) y luego arranca.
+4. Abre **http://localhost:4321/dashboard.html**
+
+> Para que arranque solo con Windows: doble clic en `install-autostart.bat` (una vez).
+
+### Por línea de comandos (opcional, otros sistemas)
 ```bash
-git clone https://github.com/TU_USUARIO/tiklike.git
+git clone https://github.com/kewinparedes/tiklike.git
 cd tiklike
 npm install
+npm start
 ```
-
-### Iniciar
-- **Windows**: doble clic en `start.bat` (o `install-autostart.bat` para que arranque solo con Windows).
-- **Cualquier sistema**: `npm start`
-
-Luego abre **http://localhost:4321/dashboard.html**
 
 ## Configurar tus cuentas
 1. Abre el dashboard → botón **⚙** (arriba a la derecha).
