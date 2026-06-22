@@ -1,0 +1,19 @@
+{
+  "name": "tiklike",
+  "version": "0.1.0",
+  "description": "Overlays e interacciones en tiempo real para TikTok LIVE (estilo TikFinity)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/static": "^8.0.3",
+    "@fastify/websocket": "^11.0.1",
+    "fastify": "^5.1.0",
+    "tiktok-live-connector": "^2.0.5",
+    "ws": "^8.18.0"
+  }
+}

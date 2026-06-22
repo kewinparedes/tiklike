@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TikLike · Panel</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --bg: #0e0e14; --card: #181822; --line: #2a2a38; --txt: #eef; --muted: #8a8aa0; --accent: #ff2d7e; --ok: #38ef7d; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font-family: "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 2px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  input[type=text] {
+    flex: 1; min-width: 200px; background: #11111a; border: 1px solid var(--line); color: var(--txt);
+    padding: 12px 14px; border-radius: 10px; font-size: 16px;
+  }
+  button {
+    border: 0; border-radius: 10px; padding: 12px 18px; font-size: 15px; font-weight: 700;
+    cursor: pointer; color: #fff; background: var(--accent); transition: filter .15s;
+  }
+  button:hover { filter: brightness(1.1); }
+  button.ghost { background: #24242f; }
+  .connrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .connrow .pl { width: 96px; font-weight: 700; flex: 0 0 auto; }
+  .connrow input { flex: 1; min-width: 180px; }
+  .connrow .st { font-size: 13px; color: var(--muted); }
+  button:disabled { opacity: .5; cursor: default; }
+  .status { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--muted); }
+  .dot.connected { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  .dot.connecting { background: #f5c518; animation: pulse 1s infinite; }
+  .dot.error { background: #ff4d4d; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; }
+  .stat { background: #11111a; border-radius: 12px; padding: 12px 14px; }
+  .stat .v { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .links { display: grid; gap: 8px; }
+  .link { display: flex; gap: 8px; align-items: center; background: #11111a; border-radius: 10px; padding: 8px 10px; }
+  .link code { flex: 1; color: #9fe6ff; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link button { padding: 7px 12px; font-size: 13px; background: #24242f; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .cols { grid-template-columns: 1fr; } }
+  .col { background: #11111a; border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  .colhead { font-size: 13px; font-weight: 700; color: var(--txt); margin-bottom: 8px; }
+  .logbox { max-height: 240px; overflow-y: auto; font-size: 13px; line-height: 1.6; }
+  .logbox .e { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .logbox .e b { color: var(--txt); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tik<span>Like</span></h1>
+  <p class="sub">Overlays e interacciones en tiempo real para TikTok LIVE</p>
+
+  <div class="card">
+    <p class="sub" style="margin:0 0 14px;">Conecta una o ambas plataformas a la vez. Todo se ve junto en el dashboard.</p>
+
+    <div class="connrow">
+      <span class="pl">🎵 TikTok</span>
+      <input type="text" id="userTiktok" placeholder="@tu_usuario_de_tiktok" autocomplete="off" />
+      <button id="btnTiktok">Conectar</button>
+      <span class="dot" id="dotTiktok"></span>
+      <span class="st" id="stTiktok">Sin conexión</span>
+    </div>
+
+    <div class="connrow" style="margin-top:10px;">
+      <span class="pl">🟣 Twitch</span>
+      <input type="text" id="userTwitch" placeholder="nombre_del_canal_twitch" autocomplete="off" />
+      <button id="btnTwitch">Conectar</button>
+      <span class="dot" id="dotTwitch"></span>
+      <span class="st" id="stTwitch">Sin conexión</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content: space-between;">
+      <h2 style="margin:0;">Contadores de la sesión</h2>
+      <div style="display:flex; gap:8px;">
+        <button class="ghost" id="simBtn" style="padding:7px 12px; font-size:13px;">Probar overlays</button>
+        <button class="ghost" id="resetBtn" style="padding:7px 12px; font-size:13px;">Reiniciar</button>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:12px;">
+      <div class="stat"><div class="v" id="c-viewers">0</div><div class="l">Viendo</div></div>
+      <div class="stat"><div class="v" id="c-likes">0</div><div class="l">Likes</div></div>
+      <div class="stat"><div class="v" id="c-followers">0</div><div class="l">Seguidores</div></div>
+      <div class="stat"><div class="v" id="c-gifts">0</div><div class="l">Regalos</div></div>
+      <div class="stat"><div class="v" id="c-diamonds">0</div><div class="l">Diamantes</div></div>
+      <div class="stat"><div class="v" id="c-shares">0</div><div class="l">Compartidos</div></div>
+      <div class="stat"><div class="v" id="c-joins">0</div><div class="l">Entradas</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Overlays para OBS <span style="text-transform:none;color:var(--muted)">· añádelos como "Fuente de navegador"</span></h2>
+    <div class="links" id="links"></div>
+  </div>
+
+  <div class="card">
+    <h2>Dashboard de monitoreo <span style="text-transform:none;color:var(--muted)">· añádelo en OBS como "Docks → Docks de navegador personalizados"</span></h2>
+    <div class="links" id="docks"></div>
+  </div>
+
+  <div class="card">
+    <h2>Actividad reciente</h2>
+    <div class="cols">
+      <div class="col">
+        <div class="colhead">💬 Chat y eventos</div>
+        <div class="logbox" id="log"></div>
+      </div>
+      <div class="col">
+        <div class="colhead">🚪 Entradas</div>
+        <div class="logbox" id="joinlog"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/tiklike.js"></script>
+<script>
+  const fmt = (n) => new Intl.NumberFormat('es-MX').format(n || 0);
+  const $ = (id) => document.getElementById(id);
+
+  // --- conexiones por plataforma (TikTok y Twitch a la vez) ---
+  const PLATS = {
+    tiktok: { suf: 'Tiktok', prefix: '@', ph: '@tu_usuario_de_tiktok' },
+    twitch: { suf: 'Twitch', prefix: '',  ph: 'nombre_del_canal_twitch' },
+  };
+  let savedUsers = { tiktok: '', twitch: '' };
+  try { savedUsers = Object.assign(savedUsers, JSON.parse(localStorage.getItem('tiklike_users') || '{}')); } catch {}
+  const persistUsers = () => localStorage.setItem('tiklike_users', JSON.stringify(savedUsers));
+  const statuses = { tiktok: 'disconnected', twitch: 'disconnected' };
+
+  function setPlatformStatus(info) {
+    const p = info.platform; if (!PLATS[p]) return;
+    const suf = PLATS[p].suf;
+    statuses[p] = info.status || 'disconnected';
+    $('dot' + suf).className = 'dot ' + statuses[p];
+    const handle = info.username ? ' · ' + PLATS[p].prefix + info.username : '';
+    const labels = {
+      disconnected: 'Sin conexión', connecting: 'Conectando…',
+      connected: '● En vivo' + handle, error: 'Error: ' + (info.lastError || ''),
+    };
+    $('st' + suf).textContent = labels[statuses[p]] || statuses[p];
+    const btn = $('btn' + suf);
+    if (statuses[p] === 'connected') { btn.textContent = 'Desconectar'; btn.classList.add('ghost'); btn.disabled = false; }
+    else if (statuses[p] === 'connecting') { btn.textContent = 'Conectando…'; btn.disabled = true; }
+    else { btn.textContent = 'Conectar'; btn.classList.remove('ghost'); btn.disabled = false; }
+  }
+
+  async function toggle(p) {
+    const suf = PLATS[p].suf;
+    if (statuses[p] === 'connected') { post('/api/disconnect', { platform: p }); return; }
+    const username = $('user' + suf).value.trim();
+    if (!username) return;
+    setPlatformStatus({ platform: p, status: 'connecting', username: username.replace(/^[@#]/, '') });
+    const res = await post('/api/connect', { platform: p, username });
+    if (!res.ok) setPlatformStatus({ platform: p, status: 'error', lastError: res.error });
+  }
+
+  // Links de overlays
+  const overlays = [
+    ['Chat', '/overlays/chat.html'],
+    ['Alertas', '/overlays/alerts.html'],
+    ['Contadores', '/overlays/counters.html'],
+    ['Voz (TTS)', '/overlays/tts.html'],
+    ['Top tap-tap ❤️', '/overlays/top.html?metric=likes'],
+    ['Top regalos 💎', '/overlays/top.html?metric=gifts'],
+    ['Efectos en pantalla ✨', '/overlays/effects.html'],
+  ];
+  function renderLinks(targetId, list) {
+    const box = $(targetId);
+    list.forEach(([name, path]) => {
+      const url = location.origin + path;
+      const div = document.createElement('div');
+      div.className = 'link';
+      div.innerHTML = `<span style="width:120px">${name}</span><code>${url}</code><button>Copiar</button>`;
+      div.querySelector('button').onclick = () => navigator.clipboard.writeText(url);
+      box.appendChild(div);
+    });
+  }
+  renderLinks('links', overlays);
+  renderLinks('docks', [['Dashboard', '/dashboard.html']]);
+
+  function setCounters(c) {
+    if (!c) return;
+    ['viewers','likes','followers','gifts','diamonds','shares','joins'].forEach(k => {
+      const el = $('c-' + k); if (el) el.textContent = fmt(c[k]);
+    });
+  }
+
+  const log = $('log');
+  const joinlog = $('joinlog');
+  function pushTo(box, html) {
+    const e = document.createElement('div');
+    e.className = 'e';
+    e.innerHTML = html;
+    box.prepend(e);
+    while (box.children.length > 50) box.lastElementChild.remove();
+  }
+  function addLog(html) { pushTo(log, html); }
+  function addJoin(html) { pushTo(joinlog, html); }
+
+  TikLike.connect((msg) => {
+    if (msg.type === 'status') setPlatformStatus(msg);
+    else if (msg.type === 'state') setCounters(msg.counters);
+    else if (msg.type === 'chat') addLog(`<b>${TikLike.escapeHtml(msg.user.name)}</b>: ${TikLike.escapeHtml(msg.comment)}`);
+    else if (msg.type === 'gift' && !msg.streaking) addLog(`🎁 <b>${TikLike.escapeHtml(msg.user.name)}</b> envió ${msg.count}× ${TikLike.escapeHtml(msg.giftName)} (💎${msg.diamonds})`);
+    else if (msg.type === 'follow') addLog(`⭐ <b>${TikLike.escapeHtml(msg.user.name)}</b> te siguió`);
+    else if (msg.type === 'share') addLog(`🔁 <b>${TikLike.escapeHtml(msg.user.name)}</b> compartió`);
+    else if (msg.type === 'member') addJoin(`<b>${TikLike.escapeHtml(msg.user.name)}</b> entró 👋`);
+    else if (msg.type === 'notice') addLog(`<span style="color:#ff8a8a">⚠ ${TikLike.escapeHtml(msg.message)}</span>`);
+  });
+
+  async function post(path, body) {
+    const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    return r.json();
+  }
+
+  // cableado de las dos conexiones + recordar usuario por plataforma
+  ['tiktok', 'twitch'].forEach((p) => {
+    const suf = PLATS[p].suf;
+    $('user' + suf).value = savedUsers[p] || '';
+    $('user' + suf).addEventListener('input', () => { savedUsers[p] = $('user' + suf).value.trim(); persistUsers(); });
+    $('user' + suf).addEventListener('keydown', (e) => { if (e.key === 'Enter') toggle(p); });
+    $('btn' + suf).onclick = () => toggle(p);
+  });
+
+  $('resetBtn').onclick = () => post('/api/reset');
+  $('simBtn').onclick = () => post('/api/simulate');
+
+  // Estado inicial de ambas plataformas
+  fetch('/api/status').then(r => r.json()).then(s => {
+    if (s.platforms) { setPlatformStatus(s.platforms.tiktok); setPlatformStatus(s.platforms.twitch); }
+    setCounters(s.counters);
+  });
+</script>
+</body>
+</html>

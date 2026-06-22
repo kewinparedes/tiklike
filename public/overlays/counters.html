@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TikLike · Contadores</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; display: flex; align-items: flex-start; padding: 16px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .card {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(18,18,22,.74); backdrop-filter: blur(6px);
+    border-radius: 16px; padding: 12px 18px; color: #fff;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3); min-width: 150px;
+  }
+  .ico { font-size: 28px; }
+  .meta { line-height: 1.1; }
+  .val { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
+  .val.bump { animation: bump .4s ease; }
+  @keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.28); color: #6ff0d0; } 100% { transform: scale(1); } }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="card"><div class="ico">👀</div><div class="meta"><div class="val" id="viewers">0</div><div class="lbl">Viendo</div></div></div>
+  <div class="card"><div class="ico">❤️</div><div class="meta"><div class="val" id="likes">0</div><div class="lbl">Likes</div></div></div>
+  <div class="card"><div class="ico">⭐</div><div class="meta"><div class="val" id="followers">0</div><div class="lbl">Seguidores</div></div></div>
+  <div class="card"><div class="ico">🎁</div><div class="meta"><div class="val" id="gifts">0</div><div class="lbl">Regalos</div></div></div>
+  <div class="card"><div class="ico">💎</div><div class="meta"><div class="val" id="diamonds">0</div><div class="lbl">Diamantes</div></div></div>
+  <div class="card"><div class="ico">🔁</div><div class="meta"><div class="val" id="shares">0</div><div class="lbl">Compartidos</div></div></div>
+  <div class="card"><div class="ico">🚪</div><div class="meta"><div class="val" id="joins">0</div><div class="lbl">Entradas</div></div></div>
+</div>
+<script src="/assets/tiklike.js"></script>
+<script>
+  const fmt = (n) => new Intl.NumberFormat('es-MX').format(n || 0);
+  const keys = ['viewers', 'likes', 'followers', 'gifts', 'diamonds', 'shares', 'joins'];
+  const els = {}; keys.forEach(k => els[k] = document.getElementById(k));
+  const last = {};
+
+  function render(c) {
+    if (!c) return;
+    for (const k of keys) {
+      const v = c[k] || 0;
+      if (last[k] !== v) {
+        els[k].textContent = fmt(v);
+        els[k].classList.remove('bump'); void els[k].offsetWidth; els[k].classList.add('bump');
+        last[k] = v;
+      }
+    }
+  }
+
+  TikLike.connect((msg) => {
+    if (msg.type === 'state') render(msg.counters);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TikLike · Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --bg:#0e0e14; --card:#181822; --line:#2a2a38; --txt:#eef; --muted:#8a8aa0; --accent:#ff2d7e; --ok:#38ef7d; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--txt); font-family:"Segoe UI",system-ui,sans-serif; }
+  body { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+  /* barra superior: estado */
+  .topbar { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); flex:0 0 auto; font-size:13px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); }
+  .dot.connected { background:var(--ok); box-shadow:0 0 8px var(--ok); }
+  .dot.connecting { background:#f5c518; animation:pulse 1s infinite; }
+  .dot.error { background:#ff4d4d; }
+  @keyframes pulse { 50% { opacity:.35; } }
+  .topbar .who { font-weight:700; }
+  .topbar .spacer { margin-left:auto; color:var(--muted); }
+  .pstat { display:inline-flex; align-items:center; gap:5px; }
+  .pstat span[id^="who"] { font-weight:700; }
+  .pbadge { font-size:11px; margin-right:4px; opacity:.9; }
+  .gear { background:none; border:0; color:var(--muted); font-size:16px; cursor:pointer; margin-left:14px; line-height:1; }
+  .gear:hover { color:var(--txt); }
+  .connpanel { flex:0 0 auto; background:#13131a; border-bottom:1px solid var(--line); padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+  .connpanel.hidden { display:none; }
+  .crow { display:flex; align-items:center; gap:8px; }
+  .crow .pl { width:64px; font-weight:500; font-size:13px; flex:0 0 auto; }
+  .crow input { flex:1; min-width:0; background:#11111a; border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:7px 10px; font-size:13px; }
+  .crow button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:7px 16px; font-size:13px; cursor:pointer; white-space:nowrap; flex:0 0 auto; }
+  .crow button:hover { filter:brightness(1.1); }
+  .cstat { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); margin:6px 0 0 2px; }
+  .cauto { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); margin:7px 0 0 2px; cursor:pointer; }
+  .cauto input { width:15px; height:15px; accent-color:var(--accent); }
+
+  /* tarjetas de estadísticas */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(92px,1fr)); gap:8px; padding:10px 12px; flex:0 0 auto; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:9px 11px; display:flex; align-items:center; gap:9px; }
+  .stat .ico { font-size:20px; }
+  .stat .v { font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+  .stat .l { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:3px; }
+  #viewersBreak { display:flex; align-items:center; gap:4px; white-space:nowrap; text-transform:none; font-size:11px; }
+  #viewersBreak .plogo { width:11px; height:11px; }
+  .stat .v.bump { animation:bump .4s ease; }
+  @keyframes bump { 0%{transform:scale(1)} 35%{transform:scale(1.22); color:#6ff0d0} 100%{transform:scale(1)} }
+
+  /* tres columnas: chat | eventos | entradas */
+  .cols { flex:1 1 auto; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; min-height:0; padding:0 12px 10px; }
+  @media (max-width:980px) { .cols { grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:560px) { .cols { grid-template-columns:1fr; } }
+  .col { display:flex; flex-direction:column; min-height:0; min-width:0; background:rgba(255,255,255,.02); border:1px solid var(--line); border-radius:12px; padding:8px 9px; }
+  .colhead { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 7px; display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+  .colhead .cnt { margin-left:auto; background:#24242f; color:var(--txt); border-radius:8px; padding:1px 7px; font-size:11px; font-weight:700; }
+  .feed { flex:1 1 auto; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding-right:3px; }
+  .feed::-webkit-scrollbar { width:7px; }
+  .feed::-webkit-scrollbar-thumb { background:#2a2a38; border-radius:8px; }
+  .msg { border-radius:10px; background:rgba(255,255,255,.03); overflow:hidden; flex:0 0 auto; }
+  .msgrow { display:flex; gap:8px; align-items:flex-start; padding:6px 9px; }
+  .phead { font-size:11px; letter-spacing:.12em; font-weight:700; padding:2px 10px; display:flex; align-items:center; gap:5px; }
+  .phead.tiktok { background:#000; color:#fff; }
+  .phead.twitch { background:#9146ff; color:#fff; }
+  .plogo { width:13px; height:13px; flex:0 0 auto; }
+  #logoTiktok, #logoTwitch { display:inline-flex; align-items:center; }
+  #logoTiktok { color:#25F4EE; }
+  #logoTwitch { color:#c4a0ff; }
+  #logoTiktok .plogo, #logoTwitch .plogo { width:16px; height:16px; }
+  .msg .av { width:26px; height:26px; border-radius:50%; flex:0 0 auto; background:#333 center/cover no-repeat; border:1px solid rgba(255,255,255,.15); }
+  .msg .bd { font-size:14px; line-height:1.35; word-break:break-word; }
+  .msg .nm { font-weight:700; color:#9fc2ff; margin-right:6px; }
+  .msg.gift { background:rgba(74,33,99,.5); } .msg.gift .nm { color:#f7b8ff; }
+  .msg.follow { background:rgba(20,78,64,.5); } .msg.follow .nm { color:#8effc4; }
+  .msg.share { background:rgba(43,88,118,.45); } .msg.share .nm { color:#9fd2ff; }
+  .msg.like { background:rgba(255,45,126,.14); } .msg.like .nm { color:#ff9ec4; }
+  .msg.sub { background:rgba(245,197,24,.16); } .msg.sub .nm { color:#ffd86b; }
+  .msg.join { background:rgba(30,41,70,.5); } .msg.join .nm { color:#9fc2ff; }
+  .msg .tag { color:var(--muted); }
+  .msg .di { color:#7fe0ff; font-weight:700; }
+  .msg .gimg { width:22px; height:22px; vertical-align:middle; margin:0 3px; object-fit:contain; }
+  .msg { cursor:pointer; }
+  .msg:hover { outline:1px solid rgba(255,255,255,.22); }
+  @keyframes in { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none;} }
+
+  /* ficha de usuario */
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:50; }
+  .modal.hidden { display:none; }
+  .sheet { position:relative; width:320px; max-width:90vw; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 16px 50px rgba(0,0,0,.5); animation:in .2s ease both; }
+  .sheet .close { position:absolute; right:12px; top:10px; background:none; border:0; color:var(--muted); font-size:18px; cursor:pointer; }
+  .mhead { display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+  .mav { width:54px; height:54px; border-radius:50%; flex:0 0 auto; background:#333 center/cover no-repeat; border:2px solid rgba(255,255,255,.2); }
+  .mname { font-size:18px; font-weight:800; line-height:1.2; }
+  .mhandle { font-size:13px; color:#9fc2ff; text-decoration:none; }
+  .mhandle:hover { text-decoration:underline; }
+  .mrows { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
+  .mrow { display:flex; justify-content:space-between; font-size:14px; padding:6px 10px; background:#11111a; border-radius:9px; }
+  .mrow span { color:var(--muted); }
+  .mbtn { display:block; text-align:center; text-decoration:none; background:var(--accent); color:#fff; font-weight:700; padding:11px; border-radius:10px; }
+  .mbtn:hover { filter:brightness(1.1); }
+
+  /* ---- efectos de regalo, contenidos DENTRO de la columna de eventos ---- */
+  #eventsCol { position:relative; }
+  .colfx { position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:12px; z-index:5; }
+  .colfx-back { position:absolute; inset:0; opacity:0; background:rgba(0,0,0,.55);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transition:opacity .45s ease; }
+  .colfx-back.on { opacity:1; }
+  .colfx-stage { position:absolute; inset:0; }
+
+  .fxFloat { position:absolute; bottom:6%; will-change:transform,opacity; }
+  .fxFloat .gi { object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,.45)); display:block; }
+  .fxFloat .lab { position:absolute; bottom:-6px; right:-10px; background:linear-gradient(135deg,#ff2d7e,#b829e8);
+    color:#fff; font-weight:800; font-size:12px; padding:1px 6px; border-radius:10px; }
+  @keyframes fxUp {
+    0%{opacity:0; transform:translateY(0) scale(.6)}
+    12%{opacity:1; transform:translateY(-24px) scale(1)}
+    80%{opacity:1}
+    100%{opacity:0; transform:translateY(var(--rise,-460px)) translateX(var(--drift,0)) scale(1)}
+  }
+  .fxHeart { position:absolute; bottom:5%; font-size:26px; will-change:transform,opacity; }
+  @keyframes fxHeartUp {
+    0%{opacity:0; transform:translateY(0) scale(.4)}
+    15%{opacity:1; transform:translateY(-16px) scale(1)}
+    100%{opacity:0; transform:translateY(var(--rise,-360px)) translateX(var(--drift,0)) scale(1.1) rotate(var(--rot,0deg))}
+  }
+  .fxBurst { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); display:grid; place-items:center; max-width:94%; }
+  .fxBurst .core { position:relative; display:grid; place-items:center; }
+  .fxBurst .bimg { width:120px; height:120px; object-fit:contain; filter:drop-shadow(0 0 20px rgba(255,45,126,.8));
+    animation:fxBurstIn 4s cubic-bezier(.18,.9,.25,1) forwards; }
+  .fxBurst .btxt { position:absolute; bottom:-46px; white-space:normal; text-align:center; max-width:92vw; width:max-content;
+    color:#fff; font-weight:900; font-size:16px; line-height:1.25; text-shadow:0 2px 10px rgba(0,0,0,.7); animation:fxBurstIn 4s ease forwards; }
+  .fxBurst .btxt b { color:#ffd86b; }
+  @keyframes fxBurstIn {
+    0%{opacity:0; transform:scale(.2) rotate(-12deg)}
+    10%{opacity:1; transform:scale(1.18) rotate(4deg)}
+    18%{transform:scale(1) rotate(0)}
+    86%{opacity:1; transform:scale(1)}
+    100%{opacity:0; transform:scale(1.05)}
+  }
+  .fxRing { position:absolute; border:3px solid rgba(255,45,126,.7); border-radius:50%; width:80px; height:80px;
+    animation:fxRing 1.8s ease-out forwards; }
+  @keyframes fxRing { 0%{opacity:.8; transform:scale(.4)} 100%{opacity:0; transform:scale(2.2)} }
+  .fxPart { position:absolute; font-size:20px; will-change:transform,opacity; animation:fxPart 1.9s ease-out forwards; }
+  @keyframes fxPart {
+    0%{opacity:0; transform:translate(0,0) scale(.4)}
+    20%{opacity:1}
+    100%{opacity:0; transform:translate(var(--px,0),var(--py,0)) scale(1.1)}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="pstat"><span class="dot" id="dotTiktok"></span><span id="logoTiktok"></span> <span id="whoTiktok">—</span></span>
+    <span class="pstat" style="margin-left:14px;"><span class="dot" id="dotTwitch"></span><span id="logoTwitch"></span> <span id="whoTwitch">—</span></span>
+    <span class="spacer" id="clock"></span>
+    <button class="gear" id="connToggle" title="Conexión" aria-label="Conexión">⚙</button>
+  </div>
+
+  <div class="modal hidden" id="connModal">
+    <div class="sheet" style="width:400px; max-width:92vw;">
+      <button class="close" id="connClose" aria-label="Cerrar">✕</button>
+      <div style="font-size:16px; font-weight:700; margin-bottom:4px;">Conexión</div>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:16px;">Conecta una o ambas plataformas a la vez.</div>
+      <div class="crow"><span class="pl" style="color:#25F4EE">TikTok</span><input id="userTiktok" placeholder="@tu_usuario_de_tiktok" autocomplete="off"><button id="btnTiktok">Conectar</button></div>
+      <div class="cstat" id="statTiktok"><span class="dot"></span><span>Sin conexión</span></div>
+      <label class="cauto"><input type="checkbox" id="autoTiktok"> Conectar solo cuando inicie mi directo</label>
+      <div class="crow" style="margin-top:16px;"><span class="pl" style="color:#c4a0ff">Twitch</span><input id="userTwitch" placeholder="nombre_del_canal_twitch" autocomplete="off"><button id="btnTwitch">Conectar</button></div>
+      <div class="cstat" id="statTwitch"><span class="dot"></span><span>Sin conexión</span></div>
+      <label class="cauto"><input type="checkbox" id="autoTwitch"> Conectar solo cuando inicie mi directo</label>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="ico">👀</span><div><div class="v" id="viewers">0</div><div class="l" id="viewersBreak">Viewers</div></div></div>
+    <div class="stat"><span class="ico">❤️</span><div><div class="v" id="likes">0</div><div class="l">Tap-tap</div></div></div>
+    <div class="stat"><span class="ico">🎁</span><div><div class="v" id="gifts">0</div><div class="l">Regalos</div></div></div>
+    <div class="stat"><span class="ico">💎</span><div><div class="v" id="diamonds">0</div><div class="l">Diamantes</div></div></div>
+    <div class="stat"><span class="ico">⭐</span><div><div class="v" id="followers">0</div><div class="l">Seguidores</div></div></div>
+    <div class="stat"><span class="ico">🚪</span><div><div class="v" id="joins">0</div><div class="l">Entradas</div></div></div>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <div class="colhead">💬 Chat <span class="cnt" id="cChat">0</span></div>
+      <div class="feed" id="feedChat"></div>
+    </div>
+    <div class="col" id="eventsCol">
+      <div class="colhead">🎁 Eventos <span class="cnt" id="cEvents">0</span></div>
+      <div class="feed" id="feedEvents"></div>
+      <div class="colfx">
+        <div class="colfx-back" id="eventsBack"></div>
+        <div class="colfx-stage" id="eventsStage"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="colhead">❤️ Tap-tap <span class="cnt" id="cTaptap">0</span></div>
+      <div class="feed" id="feedTaptap"></div>
+    </div>
+    <div class="col">
+      <div class="colhead">🚪 Entradas <span class="cnt" id="cJoins">0</span></div>
+      <div class="feed" id="feedJoins"></div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modal">
+    <div class="sheet">
+      <button class="close" id="mClose">✕</button>
+      <div class="mhead">
+        <div class="mav" id="mAv"></div>
+        <div>
+          <div class="mname" id="mName">…</div>
+          <a class="mhandle" id="mHandle" target="_blank" rel="noopener">@</a>
+        </div>
+      </div>
+      <div class="mrows" id="mRows"></div>
+      <a class="mbtn" id="mProfile" target="_blank" rel="noopener">Ver perfil en TikTok ↗</a>
+    </div>
+  </div>
+
+<script src="/assets/tiklike.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => new Intl.NumberFormat('es-MX').format(n || 0);
+
+  // logos oficiales (Simple Icons) en SVG inline, heredan el color del contenedor
+  const LOGO_PATH = {
+    tiktok: 'M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.091 1.75 4.175 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.6-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z',
+    twitch: 'M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z',
+  };
+  const logoSvg = (p) => `<svg class="plogo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${LOGO_PATH[p]}"/></svg>`;
+  const LOGO = { tiktok: logoSvg('tiktok'), twitch: logoSvg('twitch') };
+  $('logoTiktok').innerHTML = LOGO.tiktok;
+  $('logoTwitch').innerHTML = LOGO.twitch;
+
+  // --- conexión integrada (TikTok + Twitch) ---
+  const PLATS = { tiktok: { suf: 'Tiktok' }, twitch: { suf: 'Twitch' } };
+  let savedUsers = { tiktok: '', twitch: '' };
+  try { savedUsers = Object.assign(savedUsers, JSON.parse(localStorage.getItem('tiklike_users') || '{}')); } catch {}
+  const persistUsers = () => localStorage.setItem('tiklike_users', JSON.stringify(savedUsers));
+  const statuses = { tiktok: 'disconnected', twitch: 'disconnected' };
+  async function post(path, body) {
+    const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    return r.json();
+  }
+  function updateConnBtn(p) {
+    const b = $('btn' + PLATS[p].suf); if (!b) return;
+    const s = statuses[p];
+    if (s === 'connected') { b.textContent = 'Desconectar'; b.disabled = false; }
+    else if (s === 'connecting') { b.textContent = 'Conectando…'; b.disabled = true; }
+    else { b.textContent = 'Conectar'; b.disabled = false; }
+  }
+  function setConnStat(p, info) {
+    const el = $('stat' + PLATS[p].suf); if (!el) return;
+    const s = statuses[p];
+    el.querySelector('.dot').className = 'dot ' + s;
+    const user = info && info.username ? ' · ' + (p === 'twitch' ? '' : '@') + info.username : '';
+    const msgs = {
+      disconnected: 'Sin conexión',
+      connecting: 'Conectando…',
+      connected: '● En vivo' + user,
+      error: 'Error: ' + ((info && info.lastError) || 'no se pudo conectar'),
+    };
+    el.querySelector('span:last-child').textContent = msgs[s] || s;
+  }
+  async function toggleConn(p) {
+    if (statuses[p] === 'connected') { post('/api/disconnect', { platform: p }); return; }
+    const u = $('user' + PLATS[p].suf).value.trim(); if (!u) return;
+    saveAccounts(); // recuerda la cuenta para la próxima vez
+    statuses[p] = 'connecting'; updateConnBtn(p); setConnStat(p);
+    const res = await post('/api/connect', { platform: p, username: u });
+    if (!res.ok) { statuses[p] = 'error'; updateConnBtn(p); setConnStat(p, { lastError: res.error }); }
+  }
+  // Guarda las cuentas (usuario + auto) en el servidor para la auto-conexión.
+  async function saveAccounts() {
+    await post('/api/accounts', {
+      tiktok: { username: $('userTiktok').value.trim(), auto: $('autoTiktok').checked },
+      twitch: { username: $('userTwitch').value.trim(), auto: $('autoTwitch').checked },
+    });
+  }
+  ['tiktok', 'twitch'].forEach((p) => {
+    const suf = PLATS[p].suf; const inp = $('user' + suf);
+    inp.value = savedUsers[p] || '';
+    inp.addEventListener('input', () => { savedUsers[p] = inp.value.trim(); persistUsers(); });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') toggleConn(p); });
+    $('btn' + suf).onclick = () => toggleConn(p);
+    $('auto' + suf).addEventListener('change', saveAccounts);
+  });
+  // Carga las cuentas guardadas del servidor (fuente de verdad para auto-conexión).
+  fetch('/api/accounts').then(r => r.json()).then(a => {
+    if (a.tiktok) { if (a.tiktok.username) $('userTiktok').value = a.tiktok.username; $('autoTiktok').checked = !!a.tiktok.auto; }
+    if (a.twitch) { if (a.twitch.username) $('userTwitch').value = a.twitch.username; $('autoTwitch').checked = !!a.twitch.auto; }
+  }).catch(() => {});
+  const connModal = $('connModal');
+  $('connToggle').onclick = () => connModal.classList.remove('hidden');
+  $('connClose').onclick = () => connModal.classList.add('hidden');
+  connModal.onclick = (e) => { if (e.target === connModal) connModal.classList.add('hidden'); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') connModal.classList.add('hidden'); });
+
+  // reloj
+  function tick() {
+    const d = new Date();
+    $('clock').textContent = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  }
+  setInterval(tick, 1000); tick();
+
+  // estado por plataforma (ambas a la vez)
+  function setStatus(s) {
+    const p = s.platform === 'twitch' ? 'twitch' : 'tiktok';
+    const suf = p === 'twitch' ? 'Twitch' : 'Tiktok';
+    $('dot' + suf).className = 'dot ' + (s.status || 'disconnected');
+    const prefix = p === 'twitch' ? '' : '@';
+    const labels = {
+      disconnected: 'sin conexión', connecting: 'conectando…',
+      connected: prefix + (s.username || ''),
+      error: 'error',
+    };
+    $('who' + suf).textContent = labels[s.status] || s.status;
+    statuses[p] = s.status || 'disconnected';
+    updateConnBtn(p);
+    setConnStat(p, s);
+  }
+
+  // desglose de viewers por plataforma
+  function setViewersBreakdown(vb) {
+    vb = vb || {};
+    const seg = (logo, n, color) => `<span style="color:${color};display:inline-flex;align-items:center;gap:3px">${logo}${fmt(n)}</span>`;
+    const parts = [];
+    if (vb.tiktok) parts.push(seg(LOGO.tiktok, vb.tiktok, '#25F4EE'));
+    if (vb.twitch) parts.push(seg(LOGO.twitch, vb.twitch, '#c4a0ff'));
+    $('viewersBreak').innerHTML = parts.length ? parts.join('<span style="opacity:.4">·</span>') : 'Viewers';
+  }
+
+  // contadores
+  const ckeys = ['viewers', 'likes', 'gifts', 'diamonds', 'followers', 'joins'];
+  const last = {};
+  function setCounters(c) {
+    if (!c) return;
+    for (const k of ckeys) {
+      const v = c[k] || 0;
+      if (last[k] !== v) {
+        const el = $(k); el.textContent = fmt(v);
+        el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+        last[k] = v;
+      }
+    }
+  }
+
+  // tres columnas
+  const feeds = {
+    chat:   { el: $('feedChat'),   cnt: $('cChat'),   n: 0, MAX: 80 },
+    events: { el: $('feedEvents'), cnt: $('cEvents'), n: 0, MAX: 80 },
+    taptap: { el: $('feedTaptap'), cnt: $('cTaptap'), n: 0, MAX: 80 },
+    joins:  { el: $('feedJoins'),  cnt: $('cJoins'),  n: 0, MAX: 80 },
+  };
+  function avatar(pic) { return pic ? `background-image:url('${pic}')` : ''; }
+  function atBottom(el) { return el.scrollHeight - el.scrollTop - el.clientHeight < 60; }
+
+  function push(col, cls, user, bodyHtml, plat, stacked) {
+    const f = feeds[col];
+    const stick = atBottom(f.el);
+    const el = document.createElement('div');
+    el.className = 'msg' + (cls ? ' ' + cls : '');
+    el.dataset.handle = user.handle || '';
+    el.dataset.platform = plat || '';
+    const head = plat ? `<div class="phead ${plat}">${LOGO[plat] || ''}${plat === 'twitch' ? 'TWITCH' : 'TIKTOK'}</div>` : '';
+    const nameTag = stacked
+      ? `<div class="nm">${TikLike.escapeHtml(user.name)}</div>`
+      : `<span class="nm">${TikLike.escapeHtml(user.name)}</span>`;
+    el.innerHTML = `${head}<div class="msgrow"><div class="av" style="${avatar(user.pic)}"></div>
+      <div class="bd">${nameTag}${bodyHtml}</div></div>`;
+    f.el.appendChild(el);
+    while (f.el.children.length > f.MAX) f.el.firstElementChild.remove();
+    f.cnt.textContent = (++f.n > 999 ? '999+' : f.n);
+
+    if (!stick) return; // el usuario subió a leer historial: no lo movemos
+    const now = performance.now();
+    // si llegan muy seguidos (feed a tope), solo fijamos sin animar para no saturar
+    if (now - (f.lastAnim || 0) < 120) { f.lastAnim = now; f.el.scrollTop = f.el.scrollHeight; return; }
+    f.lastAnim = now;
+
+    // entrada suave: la tarjeta crece de 0 a su altura, empujando las de arriba sin saltos
+    const full = el.offsetHeight;
+    el.animate(
+      [{ height: '0px', opacity: 0 }, { height: full + 'px', opacity: 1 }],
+      { duration: 200, easing: 'cubic-bezier(.22,.61,.36,1)' }
+    );
+    const t0 = now;
+    const pin = () => { f.el.scrollTop = f.el.scrollHeight; if (performance.now() - t0 < 230) requestAnimationFrame(pin); };
+    requestAnimationFrame(pin);
+  }
+
+  // ---- efectos de REGALO (en grande, DENTRO de la columna de eventos) ----
+  const fxStage = $('eventsStage');
+  const fxBackdrop = $('eventsBack');
+  const FX_HEARTS = ['❤️', '💖', '💗', '💓', '🩷', '🧡', '💛'];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  let activeBursts = 0; // mientras haya >0, el panel queda desenfocado/oscuro
+
+  function playBurst(ev, epic) {
+    const b = document.createElement('div');
+    b.className = 'fxBurst';
+    const core = document.createElement('div');
+    core.className = 'core';
+    const size = epic ? 170 : 120;
+    const img = ev.giftIcon
+      ? `<img class="bimg" src="${ev.giftIcon}" style="width:${size}px;height:${size}px" alt="">`
+      : `<div class="bimg" style="width:${size}px;height:${size}px;font-size:${size}px;line-height:1">🎁</div>`;
+    core.innerHTML = img + `<div class="btxt"><b>${TikLike.escapeHtml(ev.user.name)}</b> · ${ev.count}× ${TikLike.escapeHtml(ev.giftName)} 💎${ev.diamonds}</div>`;
+    for (let i = 0; i < (epic ? 3 : 2); i++) {
+      const r = document.createElement('div'); r.className = 'fxRing'; r.style.animationDelay = (i * 0.18) + 's'; core.appendChild(r);
+    }
+    const count = epic ? 18 : 12;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div'); p.className = 'fxPart';
+      p.textContent = epic ? FX_HEARTS[i % FX_HEARTS.length] : '✨';
+      const ang = (Math.PI * 2 * i) / count + rnd(-0.3, 0.3);
+      const dist = rnd(70, epic ? 170 : 130);
+      p.style.setProperty('--px', (Math.cos(ang) * dist).toFixed(0) + 'px');
+      p.style.setProperty('--py', (Math.sin(ang) * dist).toFixed(0) + 'px');
+      p.style.animationDelay = rnd(0, 0.25).toFixed(2) + 's';
+      core.appendChild(p);
+    }
+    b.appendChild(core);
+    fxStage.appendChild(b);
+
+    activeBursts++;
+    fxBackdrop.classList.add('on'); // desenfoca/oscurece el panel
+    setTimeout(() => {
+      b.remove();
+      if (--activeBursts <= 0) { activeBursts = 0; fxBackdrop.classList.remove('on'); }
+    }, 4000);
+  }
+
+  // cola: los regalos no se enciman en el centro, salen uno tras otro
+  const burstQ = [];
+  let burstBusy = false;
+  function pumpBurst() {
+    if (burstBusy || !burstQ.length) return;
+    burstBusy = true;
+    const next = burstQ.shift();
+    playBurst(next.ev, next.epic);
+    setTimeout(() => { burstBusy = false; pumpBurst(); }, 2600);
+  }
+
+  function fx(msg) {
+    // SOLO regalos -> animación grande central. Sin animación de tap-tap.
+    if (msg.type === 'gift' && !msg.streaking) {
+      if (burstQ.length < 8) burstQ.push({ ev: msg, epic: (msg.diamonds || 0) >= 1000 });
+      pumpBurst();
+    }
+  }
+
+  // los likes llegan a montones: los mostramos como mucho cada 1.2s
+  let lastLike = 0;
+
+  TikLike.connect((msg) => {
+    fx(msg); // efectos visuales sobre el dashboard
+    if (msg.type === 'status') setStatus(msg);
+    else if (msg.type === 'state') { setCounters(msg.counters); setViewersBreakdown(msg.viewersByPlatform); }
+    // --- columna 1: chat ---
+    else if (msg.type === 'chat') push('chat', '', msg.user, `<span>${TikLike.escapeHtml(msg.comment)}</span>`, msg.platform, true);
+    // --- columna 2: eventos (regalos, subs, seguidores, compartidos) ---
+    else if (msg.type === 'gift' && !msg.streaking) push('events', 'gift', msg.user, `<span class="tag">envió ${msg.count}×</span> ${msg.giftIcon ? `<img class="gimg" src="${msg.giftIcon}" alt="">` : ''}<span class="tag">${TikLike.escapeHtml(msg.giftName)}</span> <span class="di">💎${msg.diamonds}</span>`, msg.platform);
+    else if (msg.type === 'subscribe') push('events', 'sub', msg.user, `<span class="tag">se suscribió ⭐</span>`, msg.platform);
+    else if (msg.type === 'follow') push('events', 'follow', msg.user, `<span class="tag">empezó a seguirte ✨</span>`, msg.platform);
+    else if (msg.type === 'share') push('events', 'share', msg.user, `<span class="tag">compartió el directo 🔁</span>`, msg.platform);
+    // --- columna 3: tap-tap ---
+    else if (msg.type === 'like') {
+      const now = performance.now();
+      if (now - lastLike > 800) { lastLike = now; push('taptap', 'like', msg.user, `<span class="tag">dio ${msg.count}× tap-tap ❤️</span>`, msg.platform); }
+    }
+    // --- columna 4: entradas ---
+    else if (msg.type === 'member') push('joins', 'join', msg.user, `<span class="tag">entró 👋</span>`, msg.platform);
+  });
+
+  // ---- ficha de usuario al hacer clic ----
+  const modal = $('modal');
+  function closeModal() { modal.classList.add('hidden'); }
+  $('mClose').onclick = closeModal;
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  document.querySelector('.cols').addEventListener('click', (e) => {
+    const row = e.target.closest('.msg');
+    if (row && row.dataset.handle) openUser(row.dataset.handle, row.dataset.platform);
+  });
+
+  async function openUser(handle, plat) {
+    plat = plat === 'twitch' ? 'twitch' : 'tiktok';
+    const url = plat === 'twitch'
+      ? 'https://www.twitch.tv/' + encodeURIComponent(handle)
+      : 'https://www.tiktok.com/@' + encodeURIComponent(handle);
+    const at = plat === 'twitch' ? '' : '@';
+    $('mName').textContent = at + handle;
+    $('mHandle').textContent = at + handle; $('mHandle').href = url;
+    $('mProfile').href = url;
+    $('mAv').style.backgroundImage = '';
+    $('mRows').innerHTML = '<div class="mrow"><span>Cargando…</span><b></b></div>';
+    modal.classList.remove('hidden');
+
+    let data = null;
+    try { data = await (await fetch('/api/user?handle=' + encodeURIComponent(handle) + '&platform=' + plat)).json(); } catch {}
+    const p = (data && data.profile) || {};
+    const a = (data && data.activity) || {};
+
+    $('mAv').style.backgroundImage = p.pic ? `url('${p.pic}')` : '';
+    $('mName').textContent = (p.name || handle) + (p.verified ? ' ✔️' : '');
+
+    const rows = [];
+    if (plat === 'twitch') {
+      if (p.broadcasterType) rows.push(['Tipo', p.broadcasterType === 'partner' ? 'Partner' : (p.broadcasterType === 'affiliate' ? 'Affiliate' : 'Usuario')]);
+      if (p.createdAt) rows.push(['En Twitch desde', new Date(p.createdAt).getFullYear()]);
+      if (p.subscriber) rows.push(['Suscriptor', 'Sí']);
+      if (p.mod) rows.push(['Moderador', 'Sí']);
+      rows.push(['En esta sesión', `🎁 ${fmt(a.gifts)} eventos  ·  💎 ${fmt(a.diamonds)} bits`]);
+    } else {
+      if (p.level) rows.push(['Nivel', '⭐ ' + p.level]);
+      if (p.followers != null) rows.push(['Seguidores', fmt(p.followers)]);
+      if (p.following != null) rows.push(['Siguiendo', fmt(p.following)]);
+      if (p.followStatus === 1 || p.followStatus === 2) rows.push(['Relación', p.followStatus === 2 ? 'Amigos' : 'Te sigue']);
+      if (p.fansClubName) rows.push(['Club de fans', p.fansClubName + (p.fansClubLevel ? ' · Nv ' + p.fansClubLevel : '')]);
+      rows.push(['En esta sesión', `❤️ ${fmt(a.likes)}  ·  🎁 ${fmt(a.gifts)}  ·  💎 ${fmt(a.diamonds)}`]);
+    }
+    if (!p.pic && !p.createdAt && p.followers == null && p.level == null) rows.unshift(['Info', 'Perfil aún no recibido']);
+
+    $('mRows').innerHTML = rows.map(([k, v]) =>
+      `<div class="mrow"><span>${k}</span><b>${TikLike.escapeHtml(String(v))}</b></div>`).join('');
+  }
+
+  // estado inicial de ambas plataformas
+  fetch('/api/status').then(r => r.json()).then(s => {
+    if (s.platforms) { setStatus(s.platforms.tiktok); setStatus(s.platforms.twitch); }
+    setCounters(s.counters);
+    setViewersBreakdown(s.viewersByPlatform);
+    // si no hay ninguna plataforma conectada, abre el modal de conexión
+    if (statuses.tiktok !== 'connected' && statuses.twitch !== 'connected') {
+      connModal.classList.remove('hidden');
+    }
+  });
+</script>
+</body>
+</html>

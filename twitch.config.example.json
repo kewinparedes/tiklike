@@ -1,0 +1,5 @@
+{
+  "clientId": "TU_CLIENT_ID_DE_TWITCH",
+  "clientSecret": "TU_CLIENT_SECRET_DE_TWITCH",
+  "redirectUri": "http://localhost:4321/auth/twitch/callback"
+}
