@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TikLike · Instalado</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --bg:#0e0e14; --card:#181822; --line:#2a2a38; --txt:#eef; --muted:#8a8aa0; --accent:#ff2d7e; --ok:#38ef7d; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--txt); font-family:"Segoe UI",system-ui,sans-serif; }
+  body { display:flex; align-items:center; justify-content:center; padding:30px 16px; }
+  .card { width:560px; max-width:100%; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:30px; text-align:center; }
+  h1 { margin:0 0 4px; font-size:28px; } h1 span { color:var(--accent); }
+  .ok { color:var(--ok); font-weight:700; margin:0 0 18px; }
+  .sub { color:var(--muted); font-size:14px; margin:0 0 22px; }
+  .urlbox { display:flex; gap:8px; margin:0 0 8px; }
+  .urlbox input { flex:1; background:#11111a; border:1px solid var(--line); color:#9fe6ff; border-radius:10px; padding:13px 14px; font-size:15px; font-family:monospace; }
+  .urlbox button { border:0; border-radius:10px; padding:0 20px; font-size:15px; font-weight:700; color:#fff; background:var(--accent); cursor:pointer; white-space:nowrap; }
+  .urlbox button:hover { filter:brightness(1.1); }
+  .copied { color:var(--ok); font-size:13px; height:18px; margin-bottom:18px; }
+  .steps { text-align:left; background:#11111a; border-radius:12px; padding:16px 18px; margin:0 0 22px; }
+  .steps h2 { font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px; }
+  .steps ol { margin:0; padding-left:20px; line-height:1.8; font-size:14px; }
+  .steps b { color:#fff; }
+  .open { display:inline-block; text-decoration:none; background:#24242f; color:#fff; padding:12px 24px; border-radius:10px; font-weight:700; }
+  .open:hover { background:#2e2e3a; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tik<span>Like</span></h1>
+    <p class="ok">✅ ¡Instalado y funcionando!</p>
+    <p class="sub">Esta es la URL de tu panel de TikLike. Cópiala y pégala en OBS como panel.</p>
+
+    <div class="urlbox">
+      <input id="url" type="text" readonly value="http://localhost:4321/dashboard.html" />
+      <button id="copyBtn">Copiar</button>
+    </div>
+    <div class="copied" id="copied"></div>
+
+    <div class="steps">
+      <h2>Cómo agregarlo a OBS (una sola vez)</h2>
+      <ol>
+        <li>En OBS: menú <b>Acoplables → Acoplables de navegador personalizados</b>.</li>
+        <li>Nombre: <b>TikLike</b> · URL: <b>pega la de arriba</b>.</li>
+        <li>Pulsa <b>Aplicar</b> y acomoda el panel donde quieras.</li>
+      </ol>
+    </div>
+
+    <a class="open" href="http://localhost:4321/dashboard.html" target="_blank">Abrir mi panel ahora ↗</a>
+  </div>
+<script>
+  const btn = document.getElementById('copyBtn');
+  const url = document.getElementById('url');
+  const copied = document.getElementById('copied');
+  btn.onclick = async () => {
+    url.select();
+    try { await navigator.clipboard.writeText(url.value); }
+    catch { document.execCommand('copy'); }
+    copied.textContent = '¡Copiado! Ahora pégala en OBS.';
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 2500);
+  };
+</script>
+</body>
+</html>

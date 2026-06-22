@@ -6,6 +6,10 @@ twitch.config.json
 # Cuentas guardadas localmente por cada usuario
 accounts.json
 
+# Salidas de compilacion del instalador (pesadas: Node + setup.exe)
+installer/runtime/
+installer/Output/
+
 # Varios
 *.log
 .DS_Store
