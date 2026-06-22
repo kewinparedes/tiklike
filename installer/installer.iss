@@ -9,6 +9,7 @@
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher=TikLike
+AppPublisherURL=https://github.com/kewinparedes/tiklike
 DefaultDirName={localappdata}\{#MyAppName}
 DisableProgramGroupPage=yes
 DisableDirPage=yes
@@ -18,14 +19,29 @@ OutputBaseFilename=TikLike-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=assets\icon.ico
+WizardImageFile=assets\wizard-large.bmp
+WizardSmallImageFile=assets\wizard-small.bmp
+UninstallDisplayIcon={app}\icon.ico
+LicenseFile={#ProjectDir}\LICENSE
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
 
+[Messages]
+WelcomeLabel1=Bienvenido al instalador de [name]
+WelcomeLabel2=Esto instalara [name] en tu PC: tu panel multistream de TikTok y Twitch para OBS.%n%nAl finalizar se abrira una pagina con la URL de tu panel para pegarla en OBS. No necesitas instalar nada mas.
+FinishedLabelNoIcons=TikLike quedo instalado y ya esta corriendo.
+FinishedLabel=TikLike quedo instalado y ya esta corriendo. Se abrira una pagina con la URL de tu panel.
+
+[Tasks]
+Name: "desktopicon"; Description: "Crear un acceso directo en el escritorio"; Flags: unchecked
+
 [Files]
-Source: "runtime\node.exe";                     DestDir: "{app}";              Flags: ignoreversion
+Source: "assets\icon.ico";                       DestDir: "{app}";              Flags: ignoreversion
+Source: "runtime\node.exe";                      DestDir: "{app}";              Flags: ignoreversion
 Source: "run-hidden.vbs";                        DestDir: "{app}";              Flags: ignoreversion
 Source: "TikLike-Panel.url";                     DestDir: "{app}";              Flags: ignoreversion
 Source: "{#ProjectDir}\src\*";                   DestDir: "{app}\src";          Flags: recursesubdirs ignoreversion
@@ -37,10 +53,11 @@ Source: "{#ProjectDir}\SETUP.md";                DestDir: "{app}";              
 Source: "{#ProjectDir}\LICENSE";                 DestDir: "{app}";              Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Panel TikLike";        Filename: "{app}\TikLike-Panel.url"
-Name: "{group}\Iniciar TikLike";      Filename: "{app}\run-hidden.vbs"
-Name: "{group}\Desinstalar TikLike";  Filename: "{uninstallexe}"
-Name: "{userstartup}\TikLike";        Filename: "{app}\run-hidden.vbs"
+Name: "{group}\Panel TikLike";       Filename: "{app}\TikLike-Panel.url";  IconFilename: "{app}\icon.ico"
+Name: "{group}\Iniciar TikLike";     Filename: "{app}\run-hidden.vbs";     IconFilename: "{app}\icon.ico"
+Name: "{group}\Desinstalar TikLike"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\TikLike";       Filename: "{app}\TikLike-Panel.url";  IconFilename: "{app}\icon.ico"; Tasks: desktopicon
+Name: "{userstartup}\TikLike";       Filename: "{app}\run-hidden.vbs"
 
 [Code]
 procedure CurStepChanged(CurStep: TSetupStep);
